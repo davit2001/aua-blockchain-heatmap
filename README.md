@@ -139,3 +139,23 @@ Fetch the total number of nodes currently stored in the database.
 - Both endpoints are asynchronous and optimized for high performance.
 - CORS is enabled, so you can easily access the API from your Next.js or React frontend.
 ---
+
+
+#### 3️⃣ GET /locations
+Fetch a list of geolocation coordinates (`latitude` and `longitude`) for Bitcoin nodes.
+
+**URL:** `http://localhost:8000/locations`
+
+**Method:** `GET`
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | `integer` | No | All | Maximum number of location entries to return. If not provided, all rows will be returned |
+
+**Response Example:**
+```json
+[
+  [40.7128, -74.0060],
+  [51.5074, -0.1278]
+]
