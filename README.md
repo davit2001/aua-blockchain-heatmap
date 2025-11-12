@@ -82,3 +82,80 @@ To count all nodes:
 ```bash
 sqlite3 nodes.db "SELECT COUNT(*) FROM nodes;"
 ```
+
+
+## 🌐 Bitcoin Nodes API
+
+This project includes a lightweight **FastAPI** service that exposes the collected Bitcoin node IPs and statistics from the local SQLite database (`nodes.db`).  
+It allows the frontend or other tools to easily fetch live node data.
+
+
+### Setup & Run
+
+#### 1. Install dependencies
+
+Make sure you have Python 3.10+ installed, then install the required packages:
+
+```bash
+pip install fastapi aiosqlite uvicorn
+```
+
+#### 2. Start the API server
+From the project root, run:
+```bash
+cd src/scripts
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+This will start the API at:
+http://localhost:8000
+
+
+### Endpoint Reference
+
+#### 1️⃣ GET /nodes
+Fetch a list of discovered Bitcoin node IP addresses.
+
+**URL:** `http://localhost:8000/nodes`
+
+**Method:** `GET`
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | `integer` | No | `100` | Maximum number of node IPs to return |
+
+
+#### 2️⃣ GET /count
+Fetch the total number of nodes currently stored in the database.
+
+**URL:** `http://localhost:8000/count`
+
+**Method:** `GET`
+
+**Query Parameters:** `None`
+
+### Notes
+- The API reads directly from nodes.db, which is continuously updated by the Bitcoin crawler (crawler.py).
+- Both endpoints are asynchronous and optimized for high performance.
+- CORS is enabled, so you can easily access the API from your Next.js or React frontend.
+---
+
+
+#### 3️⃣ GET /locations
+Fetch a list of geolocation coordinates (`latitude` and `longitude`) for Bitcoin nodes.
+
+**URL:** `http://localhost:8000/locations`
+
+**Method:** `GET`
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | `integer` | No | All | Maximum number of location entries to return. If not provided, all rows will be returned |
+
+**Response Example:**
+```json
+[
+  [40.7128, -74.0060],
+  [51.5074, -0.1278]
+]
