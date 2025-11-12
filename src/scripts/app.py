@@ -8,18 +8,37 @@ app = FastAPI(title="Bitcoin Node API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+@app.on_event("startup")
+async def init_db():
+    """Create tables if they don't exist yet."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.executescript("""
+        CREATE TABLE IF NOT EXISTS nodes (
+            ip TEXT PRIMARY KEY,
+            first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS geolocations (
+            ip TEXT,
+            latitude REAL,
+            longitude REAL,
+            FOREIGN KEY (ip) REFERENCES nodes (ip)
+        );
+        """)
+        await db.commit()
+    print("✅ Database initialized")
+
+
 @app.get("/nodes")
 async def get_nodes(limit: int = 100):
-    """
-    Return up to `limit` Bitcoin node IPs, ordered by most recently seen.
-    Example: /nodes?limit=500
-    """
+    """Return up to `limit` Bitcoin node IPs."""
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
             "SELECT ip FROM nodes ORDER BY first_seen DESC LIMIT ?",
@@ -31,10 +50,7 @@ async def get_nodes(limit: int = 100):
 
 @app.get("/count")
 async def get_count():
-    """
-    Return total number of Bitcoin nodes stored in the database.
-    Example: /count
-    """
+    """Return total number of Bitcoin nodes."""
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute("SELECT COUNT(*) FROM nodes")
         (count,) = await cursor.fetchone()
@@ -43,13 +59,9 @@ async def get_count():
 
 @app.get("/locations")
 async def get_locations(limit: int | None = None):
-    """
-    Return up to `limit` geolocation entries in the format {latitude, longitude}.
-    If no limit is given, return all available rows.
-    """
-    query = "SELECT latitude, longtitude FROM geolocations"
+    """Return up to `limit` geolocation entries."""
+    query = "SELECT latitude, longitude FROM geolocations"
     params = ()
-
     if limit is not None:
         query += " LIMIT ?"
         params = (limit,)
@@ -58,4 +70,4 @@ async def get_locations(limit: int | None = None):
         cursor = await db.execute(query, params)
         rows = await cursor.fetchall()
 
-    return [{lat, lon} for lat, lon in rows]
+    return [{"latitude": lat, "longitude": lon} for lat, lon in rows]
