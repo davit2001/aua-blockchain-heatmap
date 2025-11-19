@@ -6,7 +6,10 @@ const Heatmap = ({ data }) => {
     const mapRef = useRef(null);
 
     useEffect(() => {
+        let mounted = true;
+        
         function initMap() {
+            if (!mounted) return;
             const { google } = window;
             if (!google || !google.maps) {
                 console.warn("Google Maps not fully loaded yet");
@@ -38,7 +41,12 @@ const Heatmap = ({ data }) => {
         const existingScript = document.getElementById("googleMapsScript");
 
         if (!existingScript) {
-            console.log('process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
+            // Validate API key exists
+            if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+                console.error("❌ Google Maps API key is not configured");
+                return;
+            }
+            
             const script = document.createElement("script");
             script.id = "googleMapsScript";
             script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=visualization`;
@@ -61,6 +69,11 @@ const Heatmap = ({ data }) => {
                 });
             }
         }
+        
+        // Cleanup function to prevent memory leaks
+        return () => {
+            mounted = false;
+        };
     }, [data]);
 
     return (

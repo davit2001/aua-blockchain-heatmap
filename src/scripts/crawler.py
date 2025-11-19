@@ -18,7 +18,6 @@ import time
 import random
 import hashlib
 import ipaddress
-import os
 from typing import List, Tuple
 
 # -----------------------
@@ -34,6 +33,7 @@ CONCURRENCY = 200
 CONNECT_TIMEOUT = 8
 READ_TIMEOUT = 8
 CRAWL_ITERATIONS = 3
+MAX_QUEUE_SIZE = 2000  # Maximum peers to keep in queue per iteration
 
 SEED_DNS = [
     "seed.bitcoin.sipa.be",
@@ -69,8 +69,16 @@ def decode_varint(b: bytes, offset: int = 0) -> Tuple[int, int]:
     return struct.unpack_from("<Q", b, offset + 1)[0], offset + 9
 
 def ipv4_to_ipv6_packed(ipv4: str) -> bytes:
-    parts = list(map(int, ipv4.split('.')))
-    return b'\x00' * 10 + b'\xff\xff' + bytes(parts)
+    """Convert IPv4 address to IPv6-mapped format with validation."""
+    try:
+        parts = list(map(int, ipv4.split('.')))
+        if len(parts) != 4:
+            raise ValueError(f"Invalid IPv4 format: {ipv4} (expected 4 octets)")
+        if any(p < 0 or p > 255 for p in parts):
+            raise ValueError(f"Invalid IPv4 octets: {ipv4} (must be 0-255)")
+        return b'\x00' * 10 + b'\xff\xff' + bytes(parts)
+    except (ValueError, AttributeError) as e:
+        raise ValueError(f"Failed to convert IPv4 '{ipv4}': {e}") from e
 
 def make_message(command: str, payload: bytes) -> bytes:
     name = command.encode('ascii') + b'\x00' * (12 - len(command))
@@ -253,7 +261,7 @@ async def crawl(seed_ips: List[Tuple[str, int]], iterations: int = CRAWL_ITERATI
                     next_queue.append((p_ip, p_port))
 
         random.shuffle(next_queue)
-        queue = next_queue[:2000]
+        queue = next_queue[:MAX_QUEUE_SIZE]
         await asyncio.sleep(1)
 
     print("[INFO] Crawl finished.")

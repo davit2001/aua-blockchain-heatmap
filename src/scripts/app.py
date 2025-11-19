@@ -1,23 +1,35 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import aiosqlite
+import os
 
 DB_PATH = "nodes.db"
 
-app = FastAPI(title="Bitcoin Node API")
+# Configure allowed origins from environment variable
+# Default to localhost for development
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:3001"
+).split(",")
+
+app = FastAPI(
+    title="Bitcoin Node API",
+    description="API for Bitcoin node discovery and geolocation data",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS if "*" not in ALLOWED_ORIGINS else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET"],  # Only allow GET requests for security
+    allow_headers=["Content-Type"],
 )
 
 
 @app.on_event("startup")
 async def init_db():
-    """Create tables if they don't exist yet."""
+    """Create tables and indexes if they don't exist yet."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript("""
         CREATE TABLE IF NOT EXISTS nodes (
@@ -31,9 +43,12 @@ async def init_db():
             longitude REAL,
             FOREIGN KEY (ip) REFERENCES nodes (ip)
         );
+        
+        CREATE INDEX IF NOT EXISTS idx_geolocations_ip ON geolocations(ip);
+        CREATE INDEX IF NOT EXISTS idx_nodes_first_seen ON nodes(first_seen DESC);
         """)
         await db.commit()
-    print("✅ Database initialized")
+    print("✅ Database initialized with indexes")
 
 
 @app.get("/nodes")

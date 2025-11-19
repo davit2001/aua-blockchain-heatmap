@@ -5,18 +5,24 @@ import time
 
 BATCH_URL = "http://ip-api.com/batch"
 BATCH_SIZE = 100       # Max 100 IPs per batch
-BATCHS_PER_MIN = 15    # Free-tier rate limit (15 requests/min)
+BATCHES_PER_MIN = 15   # Free-tier rate limit (15 requests/min)
+MAX_RETRIES = 3        # Maximum retry attempts for rate limiting
 
-async def post_batch(session, ips_batch):
+async def post_batch(session, ips_batch, retry_count=0):
+    """Post batch of IPs to geolocation API with retry logic."""
     payload = [{"query": ip} for ip in ips_batch]
     try:
         async with session.post(BATCH_URL, json=payload) as resp:
             if resp.status == 429:
+                if retry_count >= MAX_RETRIES:
+                    print(f"[!] Max retries ({MAX_RETRIES}) reached. Skipping batch.")
+                    return [], {}
+                    
                 ttl = resp.headers.get("X-Ttl")
                 wait_time = int(ttl) + 1 if ttl else 60
-                print(f"[!] Rate limited — waiting {wait_time}s...")
+                print(f"[!] Rate limited — waiting {wait_time}s... (retry {retry_count + 1}/{MAX_RETRIES})")
                 await asyncio.sleep(wait_time)
-                return await post_batch(session, ips_batch)
+                return await post_batch(session, ips_batch, retry_count + 1)
 
             data = await resp.json()
             return data, resp.headers
@@ -26,11 +32,11 @@ async def post_batch(session, ips_batch):
 
 async def run_batch(db_path="nodes.db"):
     async with aiosqlite.connect(db_path) as db:
-        async with db.execute("SELECT DISTINCT ip FROM nodes_copy") as cursor:
+        async with db.execute("SELECT DISTINCT ip FROM nodes") as cursor:
             ips = [row[0] for row in await cursor.fetchall()]
 
         if not ips:
-            print("[!] No IPs found in table 'nodes_copy'")
+            print("[!] No IPs found in table 'nodes'")
             return
 
         print(f"[+] Found {len(ips)} IPs to geolocate")
@@ -45,9 +51,11 @@ async def run_batch(db_path="nodes.db"):
         await db.commit()
 
         chunks = [ips[i:i+BATCH_SIZE] for i in range(0, len(ips), BATCH_SIZE)]
-        pause_between = 60.0 / BATCHS_PER_MIN
+        pause_between = 60.0 / BATCHES_PER_MIN
 
-        async with aiohttp.ClientSession() as session:
+        # Create session with timeout
+        timeout = aiohttp.ClientTimeout(total=30, connect=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             for i, chunk in enumerate(chunks, 1):
                 print(f"[>] Sending batch {i}/{len(chunks)} ({len(chunk)} IPs)...")
 
