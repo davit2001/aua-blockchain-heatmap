@@ -1,4 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bitcoin Node Heatmap - AUA Blockchain Project
+
+This is a [Next.js](https://nextjs.org) project that visualizes Bitcoin network nodes on a world heatmap, demonstrating real P2P network topology through crawling and geolocation.
+
+## 🎉 Node.js Version Update Complete
+
+**✅ Successfully upgraded to Node.js v20.19.1**
+- Previous version: v20.8.0 (broken due to missing ICU libraries)
+- Current version: v20.19.1 (exceeds requirement of >=20.9.0)
+- Installation method: Direct binary installation to `~/local/node`
+- npm version: 10.8.2
+
+### Node.js Setup
+The project now uses a local Node.js installation at `~/local/node/bin`. This has been added to your `~/.zshrc` for permanent use:
+
+```bash
+export PATH="$HOME/local/node/bin:$PATH"
+```
+
+To verify your setup:
+```bash
+node --version  # Should show v20.19.1
+npm --version   # Should show 10.8.2
+```
 
 ## Getting Started
 

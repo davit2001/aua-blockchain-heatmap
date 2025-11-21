@@ -1,92 +1,106 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import "leaflet/dist/leaflet.css";
 
 const Heatmap = ({ data }) => {
-    const mapRef = useRef(null);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const heatLayerRef = useRef(null);
 
-    useEffect(() => {
-        let mounted = true;
-        
-        function initMap() {
-            if (!mounted) return;
-            const { google } = window;
-            if (!google || !google.maps) {
-                console.warn("Google Maps not fully loaded yet");
-                return;
-            }
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!data || data.length === 0) return;
 
-            console.log("Google Maps loaded", google.maps);
+    const initMap = async () => {
+      // Import Leaflet and heat plugin
+      const L = (await import("leaflet")).default;
+      await import("leaflet.heat");
 
-            const sanFrancisco = new google.maps.LatLng(37.774546, -122.433523);
+      // Initialize map
+      const map = L.map(mapRef.current, {
+        center: [20, 0],
+        zoom: 2,
+        zoomControl: true,
+        scrollWheelZoom: true,
+      });
 
-            const map = new google.maps.Map(mapRef.current, {
-                center: sanFrancisco,
-                zoom: 13,
-                mapTypeId: "satellite",
-            });
+      // Add OpenStreetMap tiles
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
 
-            const heatmapData = data.map(
-                (node) => new google.maps.LatLng(node.latitude, node.longitude)
-            );
+      // Convert data to heatmap format [lat, lng, intensity]
+      const heatData = data.map((node) => [node.lat, node.lng, 1]);
 
-            const heatmap = new google.maps.visualization.HeatmapLayer({
-                data: heatmapData,
-            });
+      // Create and add heat layer
+      const heat = L.heatLayer(heatData, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        max: 1.0,
+        gradient: {
+          0.0: "blue",
+          0.5: "lime",
+          0.7: "yellow",
+          1.0: "red",
+        },
+      }).addTo(map);
 
-            heatmap.setMap(map);
-        }
+      mapInstanceRef.current = map;
+      heatLayerRef.current = heat;
 
-        // --- Load Google Maps script safely ---
-        const existingScript = document.getElementById("googleMapsScript");
+      console.log(
+        `🗺️ Heatmap rendered with ${data.length.toLocaleString()} peer locations`
+      );
+    };
 
-        if (!existingScript) {
-            // Validate API key exists
-            if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-                console.error("❌ Google Maps API key is not configured");
-                return;
-            }
-            
-            const script = document.createElement("script");
-            script.id = "googleMapsScript";
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=visualization`;
-            script.async = true;
-            script.defer = true;
+    initMap();
 
-            // Use this to ensure full load before calling initMap
-            script.addEventListener("load", () => {
-                // Small delay ensures constructors (LatLng, Map, etc.) are initialized
-                setTimeout(initMap, 200);
-            });
+    // Cleanup
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        heatLayerRef.current = null;
+      }
+    };
+  }, [data]);
 
-            document.body.appendChild(script);
-        } else {
-            if (window.google && window.google.maps) {
-                initMap();
-            } else {
-                existingScript.addEventListener("load", () => {
-                    setTimeout(initMap, 200);
-                });
-            }
-        }
-        
-        // Cleanup function to prevent memory leaks
-        return () => {
-            mounted = false;
-        };
-    }, [data]);
-
+  if (!data || data.length === 0) {
     return (
-        <div
-            ref={mapRef}
-            style={{
-                width: "100%",
-                height: "500px",
-                borderRadius: "10px",
-                overflow: "hidden",
-            }}
-        />
+      <div
+        style={{
+          padding: "20px",
+          color: "#f59e0b",
+          textAlign: "center",
+          border: "2px solid #f59e0b",
+          borderRadius: "10px",
+          margin: "20px",
+          background: "#fffbeb",
+        }}
+      >
+        <h3>⚠️ No Data Available</h3>
+        <p>No geolocated peers found in the database.</p>
+        <p style={{ fontSize: "0.9em", color: "#92400e", marginTop: "10px" }}>
+          Make sure the backend API is running and has geolocated peer data.
+        </p>
+      </div>
     );
+  }
+
+  return (
+    <div
+      ref={mapRef}
+      style={{
+        width: "100%",
+        height: "600px",
+        borderRadius: "12px",
+        overflow: "hidden",
+      }}
+    />
+  );
 };
 
 export default Heatmap;
