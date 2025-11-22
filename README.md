@@ -159,3 +159,4 @@ Fetch a list of geolocation coordinates (`latitude` and `longitude`) for Bitcoin
   [40.7128, -74.0060],
   [51.5074, -0.1278]
 ]
+
