@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
+from pydantic import BaseModel
 import aiosqlite
+import os
 
-DB_PATH = "nodes.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "db", "nodes.db"))
 
 app = FastAPI(title="Bitcoin Node API")
 
@@ -13,7 +17,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 @app.on_event("startup")
 async def init_db():
@@ -71,3 +74,38 @@ async def get_locations(limit: int | None = None):
         rows = await cursor.fetchall()
 
     return [{"latitude": lat, "longitude": lon} for lat, lon in rows]
+
+
+@app.get("/stats")
+async def get_stats():
+    """Return basic statistics about crawled nodes"""
+    async with aiosqlite.connect(DB_PATH) as db:
+
+        # Total peers discovered
+        cursor = await db.execute("SELECT COUNT(*) FROM peers")
+        (total_peers,) = await cursor.fetchone()
+
+        # Geolocated peers
+        cursor = await db.execute("SELECT COUNT(*) FROM geolocations")
+        (geolocated_peers,) = await cursor.fetchone()
+
+        # Latest crawl metadata
+        cursor = await db.execute("""
+            SELECT crawl_date, crawl_duration_seconds
+            FROM crawl_metadata
+            ORDER BY id DESC
+            LIMIT 1
+        """)
+        row = await cursor.fetchone()
+
+        last_crawl = row[0] if row else None
+        crawl_duration = row[1] if row else None
+
+    return {
+        "total_peers": total_peers,
+        "geolocated_peers": geolocated_peers,
+        "last_crawl": last_crawl,
+        "crawl_duration": crawl_duration
+    }
+
+
