@@ -13,14 +13,12 @@ const Heatmap = ({ data }) => {
                 return;
             }
 
-            console.log("Google Maps loaded", google.maps);
-
-            const sanFrancisco = new google.maps.LatLng(37.774546, -122.433523);
+            const sanFrancisco = new google.maps.LatLng(40.1935695, 44.5034762);
 
             const map = new google.maps.Map(mapRef.current, {
                 center: sanFrancisco,
-                zoom: 13,
-                mapTypeId: "satellite",
+                zoom: 20,
+                mapTypeId: "roadmap",
             });
 
             const heatmapData = data.map(
@@ -34,20 +32,16 @@ const Heatmap = ({ data }) => {
             heatmap.setMap(map);
         }
 
-        // --- Load Google Maps script safely ---
         const existingScript = document.getElementById("googleMapsScript");
 
         if (!existingScript) {
-            console.log('process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
             const script = document.createElement("script");
             script.id = "googleMapsScript";
             script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=visualization`;
             script.async = true;
             script.defer = true;
 
-            // Use this to ensure full load before calling initMap
             script.addEventListener("load", () => {
-                // Small delay ensures constructors (LatLng, Map, etc.) are initialized
                 setTimeout(initMap, 200);
             });
 
@@ -68,9 +62,9 @@ const Heatmap = ({ data }) => {
             ref={mapRef}
             style={{
                 width: "100%",
+                maxWidth: "1200px",
+                borderRadius: '16px',
                 height: "500px",
-                borderRadius: "10px",
-                overflow: "hidden",
             }}
         />
     );

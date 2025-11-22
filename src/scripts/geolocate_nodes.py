@@ -2,10 +2,13 @@ import aiohttp
 import asyncio
 import aiosqlite
 import time
+import os
 
 BATCH_URL = "http://ip-api.com/batch"
 BATCH_SIZE = 100       # Max 100 IPs per batch
 BATCHS_PER_MIN = 15    # Free-tier rate limit (15 requests/min)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "db", "nodes.db"))
 
 async def post_batch(session, ips_batch):
     payload = [{"query": ip} for ip in ips_batch]
@@ -24,13 +27,13 @@ async def post_batch(session, ips_batch):
         print(f"[!] Error during batch post: {e}")
         return [], {}
 
-async def run_batch(db_path="nodes.db"):
+async def run_batch(db_path=DB_PATH):
     async with aiosqlite.connect(db_path) as db:
-        async with db.execute("SELECT DISTINCT ip FROM nodes_copy") as cursor:
+        async with db.execute("SELECT DISTINCT ip FROM peers") as cursor:
             ips = [row[0] for row in await cursor.fetchall()]
 
         if not ips:
-            print("[!] No IPs found in table 'nodes_copy'")
+            print("[!] No IPs found in table 'peers'")
             return
 
         print(f"[+] Found {len(ips)} IPs to geolocate")

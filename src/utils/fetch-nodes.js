@@ -1,5 +1,17 @@
 export async function fetchNodes() {
-    const metaRes = await fetch("http://localhost:8000/locations");
+    try {
+        const metaRes = await fetch("http://localhost:8000/locations");
 
-    return await metaRes.json();
+        const data = await metaRes.json();
+
+        return {
+            data: data,
+            error: null,
+        }
+    } catch (error) {
+        return {
+            data: null,
+            error: error.message,
+        }
+    }
 }
