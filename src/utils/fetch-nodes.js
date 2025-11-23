@@ -1,6 +1,8 @@
+const API_URL = process.env.API_URL || "http://localhost:8000";
+
 export async function fetchNodes() {
     try {
-        const metaRes = await fetch("http://localhost:8000/locations");
+        const metaRes = await fetch(`${API_URL}/locations`);
 
         const data = await metaRes.json();
 
@@ -18,7 +20,7 @@ export async function fetchNodes() {
 
 export async function fetchCrawlersMetadata() {
     try {
-        const metaRes = await fetch("http://localhost:8000/stats");
+        const metaRes = await fetch(`${API_URL}/stats`);
 
         const data = await metaRes.json();
 
