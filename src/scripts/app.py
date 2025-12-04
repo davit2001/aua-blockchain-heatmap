@@ -2,11 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 import aiosqlite
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "db", "nodes.db"))
+DB_PATH = os.path.join(BASE_DIR, "db", "nodes.db")
+
 
 app = FastAPI(title="Bitcoin Node API")
 
@@ -18,9 +20,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def init_db():
-    """Create tables if they don't exist yet."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Starting up...")
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript("""
         CREATE TABLE IF NOT EXISTS nodes (
@@ -37,7 +39,10 @@ async def init_db():
         """)
         await db.commit()
     print("✅ Database initialized")
+    yield
+    print("👋 Shutting down...")
 
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/nodes")
 async def get_nodes(limit: int = 100):
