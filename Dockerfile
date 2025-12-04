@@ -2,21 +2,24 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install backend dependencies
+# Install system updates (optional but recommended)
+RUN apt-get update && apt-get install -y build-essential
+
+# Create a virtual environment INSIDE the container
+RUN python -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
+# Copy requirements first (load dependency cache)
 COPY src/scripts/requirements.txt .
+
+# Install Python dependencies inside the container venv
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your actual backend code
-COPY src/scripts /app
-
-# Copy ONLY the real database folder
+# Copy backend code
+COPY src/scripts/*.py /app/
 COPY src/db /app/db
 
-# Make DB writable
 RUN mkdir -p /app/db && chmod -R 777 /app/db
 
-ENV DB_PATH=/app/db/nodes.db
-
-EXPOSE 8000
-
+# IMPORTANT: Run uvicorn from the venv inside Docker
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
