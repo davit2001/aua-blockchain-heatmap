@@ -1,88 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## About Project
+
+This project visualizes the global distribution of Bitcoin nodes by discovering peer nodes through network crawling, geolocating them, and displaying their geographic distribution on an interactive heatmap. The application demonstrates the decentralized nature of the Bitcoin network and provides insights into where nodes are concentrated worldwide.
 
 ## Getting Started
 
-First, run the development server:
+To run a project locally we have so many options which you can choose from however the easiest way to run this project frontend, backend and database is using Docker.
+#### Prerequisites
+Make sure you have the following installed on your machine:
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+#### Run a docker with Docker Compose
+```
+docker-compose up --build
+```
+or if you are using Docker Compose V2
+```
+docker compose up -d --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-
-
-
-##  Bitcoin Node Crawler (Initial Setup)
-
-This is an **initial version** of the Bitcoin network crawler.
-
-It connects to peers using the Bitcoin P2P protocol, discovers new nodes,  
-and stores them in a local SQLite database (`nodes.db`).
-
-###  Requirements
-- Python 3.8+
-- Dependencies: `aiosqlite`
-```bash
-pip install aiosqlite
+## Run a project with shell scripts
+Alternatively, you can run the project using shell scripts provided in the `scripts` directory.
+Make sure you have Python 3.10+ installed on your machine.
+Create a .env file in the root directory and add the following environment variables and put your Google Maps API key:
+```
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
 ```
 
-###  How to Run
-
-1. Go to the script folder:
+#### 1. Install dependencies
 ```bash
-cd src/scripts
+pip install -r src/scripts/requirements.txt
 ```
-2. Run the crawler:
+#### 2. Populate the database
+Run the crawler to populate the SQLite database with Bitcoin node data:
 ```bash
-python crawler.py
-```
+chmod +x shell-scripts/popuplate_database.sh 
+shell-scripts/popuplate_database.sh  
+````
 
-You can optionally specify seeds, concurrency, and iterations:
+#### 3. Start the FastAPI server
+Run the server to expose the Bitcoin nodes API:
 ```bash
-python crawler.py --seeds seed.bitcoin.sipa.be --iterations 3 --concurrency 200
-```
-
-### Output
-A SQLite database nodes.db is created in the same folder.  
-The database contains a table nodes with discovered IPs.
-
-
-### Check the results
-To see the first 10 nodes:
-```bash
-sqlite3 nodes.db "SELECT * FROM nodes LIMIT 10;"
-```
-To count all nodes:
-```bash
-sqlite3 nodes.db "SELECT COUNT(*) FROM nodes;"
+chmod +x shell-scripts/start_backend.sh
+shell-scripts/start_backend.sh
 ```
 
+#### 4. Start the frontend
+Run the frontend to access the web interface:
+```bash
+chmod +x shell-scripts/start_frontend.sh
+shell-scripts/start_frontend.sh
+```
+
+#### 5. Access the application
+Open your web browser and navigate to:
+```
+http://localhost:3000
+```
 
 ## 🌐 Bitcoin Nodes API
 

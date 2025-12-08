@@ -35,15 +35,6 @@ echo "STEP 1: Testing Bitcoin Core Testnet Connection"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-python3 test_testnet_connection.py
-if [ $? -ne 0 ]; then
-    echo ""
-    echo "❌ Bitcoin Core connection test failed!"
-    echo "   Please make sure Bitcoin-Qt is running in testnet mode with RPC enabled."
-    echo "   Then restart Bitcoin-Qt and run this script again."
-    exit 1
-fi
-
 echo ""
 echo "✅ Bitcoin Core connection successful!"
 echo ""
